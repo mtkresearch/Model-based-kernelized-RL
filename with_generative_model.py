@@ -128,6 +128,8 @@ def planning_phase(P_kernel,M, D, state_space, action_space,state_action_space, 
     ft_std = np.zeros((H+1, len(state_action_space)))
     ft_estimate = np.zeros((H+1, len(state_space), len(action_space)))
     Qt_estimate = np.zeros((H+1, len(state_space), len(action_space)))
+    ucb_bonus = np.zeros((H+1, len(state_space), len(action_space))) #added this for revision
+
     reward = np.zeros((H, len(state_space), len(action_space)))
 
     for h in reversed(range(H)):
@@ -156,7 +158,8 @@ def planning_phase(P_kernel,M, D, state_space, action_space,state_action_space, 
         ft_mean[h], ft_std[h] = GP_regression(X, y, state_action_space,P_kernel)
         ft_mean_reshaped = ft_mean[h].reshape((len(state_space), len(action_space)))
         ft_std_reshaped = ft_std[h].reshape((len(state_space), len(action_space)))
-        ft_estimate[h] = ft_mean_reshaped 
+        ft_estimate[h] = ft_mean_reshaped
+        ucb_bonus[h]=np.minimum(beta * ft_std_reshaped,H) #added this for revision 
         temp_reward = np.zeros_like(ft_mean_reshaped)  
 
         for i, state in enumerate(state_space):
@@ -164,7 +167,7 @@ def planning_phase(P_kernel,M, D, state_space, action_space,state_action_space, 
                 temp_reward[i, j] = r[i,j]
 
         reward[h]=temp_reward
-        q= ft_estimate[h] + reward[h]
+        q= ft_estimate[h] + reward[h] + ucb_bonus[h] #added this for revision
         Qt_estimate[h]= np.minimum(np.maximum(q, 0), H)
     
     episode_regrets = []

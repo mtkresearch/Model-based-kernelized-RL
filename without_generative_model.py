@@ -140,7 +140,9 @@ def planning_phase(P_kernel,M, D, state_space, action_space,state_action_space, 
     ft_mean = np.zeros((H+1, len(state_action_space)))
     ft_std = np.zeros((H+1, len(state_action_space)))
     ft_estimate = np.zeros((H+1, len(state_space), len(action_space)))
+    ucb_bonus = np.zeros((H+1, len(state_space), len(action_space))) #added this for revision
     Qt_estimate = np.zeros((H+1, len(state_space), len(action_space)))
+
     reward = np.zeros((H, len(state_space), len(action_space)))
 
     for h in reversed(range(H)):
@@ -171,6 +173,7 @@ def planning_phase(P_kernel,M, D, state_space, action_space,state_action_space, 
 
             ft_mean_reshaped = ft_mean[h].reshape((len(state_space), len(action_space)))
             ft_std_reshaped = ft_std[h].reshape((len(state_space), len(action_space)))
+            ucb_bonus[h] = np.minimum(beta * ft_std_reshaped,H) #added this for revision
             ft_estimate[h] = ft_mean_reshaped 
             temp_reward = np.zeros_like(ft_mean_reshaped)  # Initialize reward array
 
@@ -179,7 +182,7 @@ def planning_phase(P_kernel,M, D, state_space, action_space,state_action_space, 
                     temp_reward[i, j] = r[i,j]
 
             reward[h]=temp_reward
-            q= ft_estimate[h] + reward[h]
+            q= ft_estimate[h] + reward[h] + ucb_bonus[h] #added this for revision
             Qt_estimate[h]= np.minimum(np.maximum(q, 0), H)
     
 
